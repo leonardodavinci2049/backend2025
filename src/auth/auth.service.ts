@@ -3,7 +3,6 @@ import {
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
-import * as bcrypt from 'bcrypt';
 
 import { LoginAuthDto } from './dto/login-auth.dto';
 import { RegisterAuthDto } from './dto/register-auth.dto';
@@ -58,21 +57,13 @@ export class AuthService {
 
     if (!userLogin) {
       throw new UnauthorizedException(
-        new ResultModel(
-          100401,
-          'Login e/ou Senha Incorretos.',
-          'Unauthorized',
-          {},
-        ),
+        new ResultModel(100401, 'Login e/ou Senha Incorretos.', 0, {}),
       );
     }
 
     // console.log(userLogin);
 
-    return new ResultModel(100200, 'Login Efetuado com sucesso', '', {
-      token: this.createToken(userLogin),
-      user: userLogin,
-    });
+    return new ResultModel(100200, 'Login Efetuado com sucesso', 0, userLogin);
   }
 
   async logLogin(loginAuthDto: LoginAuthDto) {
@@ -82,10 +73,8 @@ export class AuthService {
     try {
       connectionPool = await this.dbService.getConnection();
       console.log('ABRIU CONEXÃO 1');
-      //[rows]
-      const [rows] = await connectionPool.execute(`
-                                           
-                                          call exec_UsuarioLoginV1(
+
+      const queryString = ` call sp_usuario_Login_V1(
                                                         14,
                                                         1,    
                                                         1,          
@@ -104,18 +93,15 @@ export class AuthService {
                                                                       
                                                         '19372846',    
                                                         '19372846'    
-                                                      )
+                                                      ) `;
 
-
-                                            `);
+      //[rows]
+      const [rows] = await connectionPool.execute(queryString);
 
       // console.log(rows); // results contains rows returned by server
       // console.log(fields); // fields cont
 
-      return new ResultModel(100200, 'Login Efetuado com sucesso', '', {
-        token: '193272846',
-        user: rows,
-      });
+      return new ResultModel(100200, 'Login Efetuado com sucesso', 0, rows);
     } catch (err) {
       console.log(err);
     } finally {

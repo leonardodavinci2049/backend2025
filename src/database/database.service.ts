@@ -1,11 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { createPool, Pool } from 'mysql2/promise';
+import { createPool, Pool, ResultSetHeader } from 'mysql2/promise';
 import { envs } from 'src/core/config/envs';
 
 @Injectable()
 export class DatabaseService {
   // Property to hold the connection to MySQL database
-  private pool: Pool;
+  private poolConnection: Pool;
   // Logger instance
   private readonly logger = new Logger(DatabaseService.name);
 
@@ -17,7 +17,7 @@ export class DatabaseService {
   public async connect() {
     try {
       // Attempt to create a connection to MySQL
-      this.pool = createPool({
+      this.poolConnection = createPool({
         port: 3306,
         host: envs.DB_MYSQL_HOST,
         user: envs.DB_MYSQL_USER,
@@ -42,11 +42,46 @@ export class DatabaseService {
     }
   }
 
-  async closePool() {
-    await this.pool.end();
+  async selectQuery<T>(
+    queryString: string,
+    params?: any[],
+  ): Promise<Partial<T>[]> {
+    const [results] = await this.poolConnection.query(queryString, params);
+    return results as T[];
+  }
+
+  async selectExecute<T>(
+    queryString: string,
+    params?: any[],
+  ): Promise<Partial<T>[]> {
+    const [results] = await this.poolConnection.execute(queryString, params);
+    return results as T[];
+  }
+
+  // insert/update/delete
+  // insert/update/delete
+  async ModifyExecute(
+    queryString: string,
+    params?: any[],
+  ): Promise<ResultSetHeader> {
+    const [results] = await this.poolConnection.execute(queryString, params);
+    return results as ResultSetHeader;
+  }
+
+  // insert/update/delete
+  async ModifyQuery(
+    queryString: string,
+    params?: any[],
+  ): Promise<ResultSetHeader> {
+    const [results] = await this.poolConnection.query(queryString, params);
+    return results as ResultSetHeader;
   }
 
   async getConnection() {
-    return this.pool.getConnection();
+    return this.poolConnection.getConnection();
+  }
+
+  async closePool() {
+    await this.poolConnection.end();
   }
 }

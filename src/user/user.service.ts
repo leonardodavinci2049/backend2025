@@ -9,89 +9,126 @@ import { createConnection, Connection } from 'mysql2/promise';
 import { DatabaseService } from 'src/database/database.service';
 import { getMd5 } from 'src/core/utls/generators/get_md5';
 
+import { ResultModel } from 'src/core/utls/result.model';
+import { IUserId } from './entities/userId.entity';
+
 @Injectable()
 export class UserService {
   private connection: Connection;
   constructor(private readonly dbService: DatabaseService) {}
 
   async create(createUserDto: CreateUserDto) {
-    //try {
-    //   const salt = await bcrypt.genSalt(10);
-    const olUUID = UuidV4();
-    const password = getMd5(createUserDto.SENHA);
+    let connectionPool = null;
+    try {
+      //   const salt = await bcrypt.genSalt(10);
 
-    const offset = new Date().getTimezoneOffset() * 60000;
-    createUserDto.DATADOCADASTRO = new Date(Date.now() - offset);
-    createUserDto.DT_UPDATE = new Date(Date.now() - offset);
+      const ol_id_system = createUserDto.ID_SYSTEM;
+      const ol_id_loja = createUserDto.ID_LOJA;
+      const ol_id_departamento = createUserDto.ID_DEPARTAMENTO;
+      const ol_id_usuario = createUserDto.ID_USUARIO;
 
-    // console.log(createUserDto.EMAIL_DE_LOGIN, createUserDto.SENHA, password);
-    /* 
-      return await this.prisma.tbl_system_usuario.create({
-        data: {
-          ID_UUID: olUUID,
-          ID_SYSTEM_CFG_CLIENTE: createUserDto.ID_SYSTEM_CFG_CLIENTE,
-          ID_PESSOA: createUserDto.ID_PESSOA,
-          LOGIN: createUserDto.LOGIN,
-          NOME: createUserDto.NOME,
-          EMAIL_DE_LOGIN: createUserDto.EMAIL_DE_LOGIN,
-          SENHA: password,
-          //  ROLE: createUserDto.ROLE,
-          DATADOCADASTRO: createUserDto.DATADOCADASTRO,
-          DT_UPDATE: createUserDto.DT_UPDATE,
-        },
-        select: {
-          ID_UUID: true,
-          ID_USUARIO_SYSTEM: true,
-          ID_SYSTEM_CFG_CLIENTE: true,
-          NOME: true,
-          // ROLE: true,
-          EMAIL_DE_LOGIN: true,
-          DATADOCADASTRO: true,
-        },
-      });
-    } catch (error) {
-      throw new NotFoundException(error.message);
-    } */
+      const ol_id_uuid = UuidV4();
+      const ol_id_pessoa = createUserDto.ID_PESSOA;
 
-    return false;
+      const ol_nome = createUserDto.NOME;
+      const ol_email_de_login = createUserDto.EMAIL_DE_LOGIN;
+      const ol_login = createUserDto.LOGIN;
+      const ol_password = getMd5(createUserDto.SENHA);
+
+      connectionPool = await this.dbService.getConnection();
+      console.log('ABRIU CONEXÃO 1');
+      //[rows]
+
+      const queryString = `call sp_usuario_create_V1(
+                      ${ol_id_system},
+                      ${ol_id_loja},
+                      ${ol_id_departamento},        
+                      ${ol_id_usuario},
+
+                      '${ol_id_uuid}', 
+                      ${ol_id_pessoa},
+
+                      '${ol_nome}',
+                       '${ol_email_de_login}',
+                       '${ol_login}',
+                       '${ol_password}'
+                     ); `;
+      const [newUser] = await connectionPool.execute(queryString);
+      // console.log(rows); // results contains rows returned by server
+      // console.log(fields); // fields cont
+
+      const ol_id_record = newUser[0][0].ID_USUARIO_SYSTEM;
+      const ol_id_error = newUser[1][0].pl_id_erro;
+      const ol_id_feedback = newUser[1][0].pl_feedback;
+      if (ol_id_error === 0 && ol_id_record > 0) {
+        return new ResultModel(
+          100200,
+          `${ol_id_feedback} id: ${ol_id_record}`,
+          ol_id_record,
+          newUser,
+        );
+      } else {
+        return new ResultModel(100404, ol_id_feedback, 0, '');
+      }
+    } catch (err) {
+      return new ResultModel(100404, err.message, 0, '');
+    } finally {
+      if (connectionPool) {
+        connectionPool.release();
+        console.log('FECHOU A CONEXÃO 1');
+      }
+    }
+
+    // console.log(userLogin);
   }
+
   // USANDO PRISMA
   async findAll() {
-    /*     try {
-      return this.prisma.tbl_system_usuario.findMany({
-        where: {
-          EMAIL_DE_LOGIN: {
-            contains: '@',
-          },
-        },
-        take: 10,
-        orderBy: {
-          ID_USUARIO_SYSTEM: 'desc',
-        },
-        select: {
-          ID_USUARIO_SYSTEM: true,
-          ID_SYSTEM_CFG_CLIENTE: true,
-          ID_PESSOA: true,
-          LOGIN: true,
-          NOME: true,
-          EMAIL_DE_LOGIN: true,
-          SENHA: true,
-        },
-      });
-    } catch (err) {
-      console.log(err);
-    } finally {
-      // console.log('FECHOU A CONEXÃO 1');
-    } */
+    let connectionPool = null;
 
-    return false;
+    try {
+      connectionPool = await this.dbService.getConnection();
+      // console.log('ABRIU CONEXÃO 1');
+      //[rows]
+
+      const [ResultLogin] = await connectionPool.execute(`
+                                            select 
+                                              ID_USUARIO_SYSTEM,
+                                              ID_SYSTEM_CFG_CLIENTE,
+                                              ID_PESSOA,
+                                              LOGIN,
+                                              NOME,
+                                              EMAIL_DE_LOGIN,
+                                              SENHA
+                                            from 
+                                              tbl_system_usuario
+                                            where
+                                             ID_SYSTEM_CFG_CLIENTE = 14
+                                            order by ID_USUARIO_SYSTEM desc limit 2
+                                            `);
+
+      return new ResultModel(
+        100200,
+        'Usuário(s) carregados com sucesso',
+        0,
+        ResultLogin,
+      );
+    } catch (err) {
+      return new ResultModel(100404, err, 0, '');
+    } finally {
+      if (connectionPool) {
+        connectionPool.release();
+        // console.log('FECHOU A CONEXÃO 1');
+      }
+    }
   }
 
   // USANDO MYSQL2 COM MODULO
   async findAll1() {
+    let connectionPool = null;
+
     try {
-      const connectionPool = await this.dbService.getConnection();
-      // console.log('ABRIU CONEXÃO 1');
+      connectionPool = await this.dbService.getConnection();
       //[rows]
       const [rows] = await connectionPool.query(`
                                             select 
@@ -106,7 +143,7 @@ export class UserService {
                                               tbl_system_usuario
                                             where
                                              ID_SYSTEM_CFG_CLIENTE = 14
-                                            order by ID_USUARIO_SYSTEM desc limit 100
+                                            order by ID_USUARIO_SYSTEM desc limit 5
                                             `);
 
       // console.log(rows); // results contains rows returned by server
@@ -116,8 +153,10 @@ export class UserService {
     } catch (err) {
       console.log(err);
     } finally {
-      //this.connection.end(); Not permission
-      /// console.log('FECHOU A CONEXÃO 1');
+      if (connectionPool) {
+        connectionPool.release();
+        // console.log('FECHOU A CONEXÃO 1');
+      }
     }
   }
   // USANDO MYSQL2 SEN MODULO
@@ -167,69 +206,151 @@ export class UserService {
   }
 
   async findOne(id: number) {
-    //there is the option to use findFirst or findMany but findUnique is more performant
+    let connectionPool = null;
 
-    /*   if (!id) throw new NotFoundException(`User with id not found`);
+    if (!id) throw new NotFoundException(`User with id not found`);
     // console.log('id: ' + id);
     await this.userExists(id);
 
-    //console.log('id3: ' + id);
-    return this.prisma.tbl_system_usuario.findUnique({
-      where: {
-        ID_USUARIO_SYSTEM: id,
-      },
-      select: {
-        ID_USUARIO_SYSTEM: true,
-        ID_SYSTEM_CFG_CLIENTE: true,
-        ID_PESSOA: true,
-        LOGIN: true,
-        NOME: true,
-        ROLE: true,
-        EMAIL_DE_LOGIN: true,
-        SENHA: true,
-      },
-    }); */
+    try {
+      connectionPool = await this.dbService.getConnection();
+      // console.log('ABRIU CONEXÃO 1');
+      //[rows]
 
-    return false;
+      const [resultUser] = await connectionPool.execute(`
+                                            select 
+                                              ID_USUARIO_SYSTEM,
+                                              ID_SYSTEM_CFG_CLIENTE,
+                                              ID_PESSOA,
+                                              LOGIN,
+                                              NOME,
+                                              EMAIL_DE_LOGIN,
+                                              SENHA
+                                            from 
+                                              tbl_system_usuario
+                                            where
+                                             ID_SYSTEM_CFG_CLIENTE = 14
+                                            and ID_USUARIO_SYSTEM = ${id}
+                                            order by ID_USUARIO_SYSTEM desc limit 2
+                                            `);
+
+      return new ResultModel(
+        100200,
+        `Usuário id: ${id} carregados com sucesso`,
+        0,
+        resultUser,
+      );
+    } catch (err) {
+      return new ResultModel(100404, err, 0, '');
+    } finally {
+      if (connectionPool) {
+        connectionPool.release();
+        // console.log('FECHOU A CONEXÃO 1');
+      }
+    }
   }
 
   async update(id: number, data: UpdateUserDto) {
-    /*     await this.userExists(id);
+    try {
+      if (!id) throw new NotFoundException(`User with id not found`);
+      // console.log('id: ' + id);
+      const result = await this.userExists(id);
 
-    // data.SENHA = await bcrypt.hash(SENHA, 10);
+      if (result.data === 0) {
+        return new ResultModel(
+          100404,
+          `Usuário id: ${id} não foi encontrado`,
+          0,
+          '',
+        );
+      }
 
-    return this.prisma.tbl_system_usuario.update({
-      where: {
-        ID_USUARIO_SYSTEM: id,
-      },
-      data,
-    }); */
-
-    return false;
+      const queryString = `UPDATE tbl_system_usuario SET ? WHERE ID_USUARIo_SYSTEM = ?;`;
+      const updateDate = await this.dbService.ModifyQuery(queryString, [
+        data,
+        id,
+      ]);
+      if (updateDate) {
+        return new ResultModel(
+          100200,
+          `Usuário id: ${id} atualizado com sucesso`,
+          0,
+          updateDate,
+        );
+      }
+    } catch (err) {
+      return new ResultModel(100404, err, 0, '');
+    } finally {
+      // console.log('FECHOU A CONEXÃO 1');
+    }
   }
 
   async remove(id: number) {
-    /*     await this.userExists(id);
+    try {
+      if (!id) throw new NotFoundException(`User with id not found`);
+      // console.log('id: ' + id);
+      const result = await this.userExists(id);
 
-    return this.prisma.tbl_system_usuario.delete({
-      where: {
-        ID_USUARIO_SYSTEM: id,
-      },
-    }); */
-    return false;
+      if (result.data === 0) {
+        return new ResultModel(
+          100404,
+          `Usuário id: ${id} não foi encontrado`,
+          0,
+          0,
+        );
+      }
+
+      const queryString = `DELETE FROM tbl_system_usuario WHERE ID_USUARIO_SYSTEM = ?;`;
+      const deteteDate = await this.dbService.ModifyExecute(queryString, [id]);
+      if (deteteDate) {
+        return new ResultModel(
+          100200,
+          `Usuário id: ${id} excluído com sucesso`,
+          0,
+          deteteDate,
+        );
+      }
+    } catch (err) {
+      return new ResultModel(100404, err, 0, '');
+    } finally {
+      // console.log('FECHOU A CONEXÃO 1');
+    }
   }
 
   async userExists(id: number) {
-    /*   const user = await this.prisma.tbl_system_usuario.count({
-      where: {
-        ID_USUARIO_SYSTEM: id,
-      },
-    });
+    try {
+      const queryString = `SELECT                            
+                            ID_USUARIO_SYSTEM  
+                        FROM 
+                          tbl_system_usuario 
+                        WHERE 
+                          ID_USUARIO_SYSTEM = ?;`;
 
-    if (!user) {
-      throw new NotFoundException(`O usuário ${id} não foi encontrado.`);
-    } */
-    return false;
+      const [resultUserId] = await this.dbService.selectExecute<IUserId>(
+        queryString,
+        [id],
+      );
+
+      let id_usuario = 0;
+      if (resultUserId) {
+        id_usuario = resultUserId.ID_USUARIO_SYSTEM;
+
+        return new ResultModel(
+          100200,
+          `Usuário id: ${id} carregados com sucesso`,
+          0,
+          id_usuario,
+        );
+      } else {
+        return new ResultModel(100404, 'Usuário não encontrado', 0, 0);
+      }
+    } catch (err) {
+      return new ResultModel(100404, err.message, 0, 0);
+    } finally {
+      //if (connectionPool) {
+      // connectionPool.release();
+      console.log('FECHOU A CONEXÃO 1');
+    }
   }
 
   async pause(milliseconds: number) {
