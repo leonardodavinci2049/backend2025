@@ -62,9 +62,4 @@ export class AuthController {
     return this.authService.checkToken(token);
     // return {message: 'Token Success', data: Req.tokenPayload, user: Req.user};
   }
-
-  @Post('v1/logLogin')
-  findAll1(@Body() loginAuthDto: LoginAuthDto) {
-    return this.authService.logLogin(loginAuthDto);
-  }
 }

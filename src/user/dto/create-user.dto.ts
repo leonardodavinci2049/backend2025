@@ -17,31 +17,34 @@ export class CreateUserDto {
 
   @IsOptional()
   @IsInt()
-  ID_USUARIO_SYSTEM?: number;
+  ID_SYSTEM?: number;
 
   @IsInt()
-  ID_SYSTEM_CFG_CLIENTE?: number;
+  ID_LOJA?: number;
+
+  @IsOptional()
+  @IsInt()
+  ID_DEPARTAMENTO?: number;
+
+  @IsInt()
+  ID_USUARIO?: number;
 
   @IsInt()
   ID_PESSOA?: number;
 
-  @IsString({ message: 'LOGIN must be a valid string', each: true })
-  LOGIN?: string;
-
   @IsString({ message: 'NOME must be a valid string', each: true })
   NOME?: string;
-
-  @IsOptional()
-  @IsEnum(RoleEnum, { message: 'ROLE must be a valid Role' })
-  ROLE?: number;
 
   @IsEmail({}, { message: 'Invalid email' })
   EMAIL_DE_LOGIN: string;
 
   @IsString({ message: 'LOGIN must be a valid string', each: true })
+  LOGIN?: string;
+
+  @IsString({ message: 'LOGIN must be a valid string', each: true })
   SENHA?: string;
 
-  DATADOCADASTRO?: Date;
-
-  DT_UPDATE?: Date;
+  @IsOptional()
+  @IsEnum(RoleEnum, { message: 'ROLE must be a valid Role' })
+  ROLE?: number;
 }

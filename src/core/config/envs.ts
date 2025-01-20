@@ -12,6 +12,7 @@ interface EnvVars {
 
   DATABASE_URL: string;
   DB_MYSQL_HOST: string;
+  DB_MYSQL_PORT: number;
   DB_MYSQL_USER: string;
   DB_MYSQL_PASSWORD: string;
   DB_MYSQL_DATABASE: string;
@@ -27,6 +28,7 @@ const envsSchema = joi
 
     DATABASE_URL: joi.string().required(),
     DB_MYSQL_HOST: joi.string().required(),
+    DB_MYSQL_PORT: joi.number().positive().required(),
     DB_MYSQL_USER: joi.string().required(),
     DB_MYSQL_PASSWORD: joi.string().required(),
     DB_MYSQL_DATABASE: joi.string().required(),
@@ -49,6 +51,7 @@ export const envs = {
 
   DATABASE_URL: envVars.DATABASE_URL,
   DB_MYSQL_HOST: envVars.DB_MYSQL_HOST,
+  DB_MYSQL_PORT: envVars.DB_MYSQL_PORT,
   DB_MYSQL_USER: envVars.DB_MYSQL_USER,
   DB_MYSQL_PASSWORD: envVars.DB_MYSQL_PASSWORD,
   DB_MYSQL_DATABASE: envVars.DB_MYSQL_DATABASE,

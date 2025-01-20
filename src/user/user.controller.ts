@@ -56,6 +56,13 @@ export class UserController {
   findOne(@ParamId() id: number) {
     return this.userService.findOne(id);
   }
+
+  @UseGuards(AuthGuard)
+  @Get('v1/userExists/:id')
+  userExists(@ParamId() id: number) {
+    return this.userService.userExists(id);
+  }
+
   @UseGuards(AuthGuard)
   @Put('v1/updateAny/:id')
   update(
