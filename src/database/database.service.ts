@@ -18,11 +18,11 @@ export class DatabaseService {
     try {
       // Attempt to create a connection to MySQL
       this.poolConnection = createPool({
-        port: 3306,
         host: envs.DB_MYSQL_HOST,
+        port: envs.DB_MYSQL_PORT,
+        database: envs.DB_MYSQL_DATABASE,
         user: envs.DB_MYSQL_USER,
         password: envs.DB_MYSQL_PASSWORD,
-        database: envs.DB_MYSQL_DATABASE,
         waitForConnections: true,
         connectionLimit: 10,
         queueLimit: 0,

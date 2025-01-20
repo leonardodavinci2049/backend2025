@@ -53,19 +53,19 @@ export class UserService {
                        '${ol_login}',
                        '${ol_password}'
                      ); `;
-      const [newUser] = await connectionPool.execute(queryString);
+      const [resultData] = await connectionPool.execute(queryString);
       // console.log(rows); // results contains rows returned by server
       // console.log(fields); // fields cont
 
-      const ol_id_record = newUser[0][0].ID_USUARIO_SYSTEM;
-      const ol_id_error = newUser[1][0].pl_id_erro;
-      const ol_id_feedback = newUser[1][0].pl_feedback;
+      const ol_id_record = resultData[0][0].ID_USUARIO_SYSTEM;
+      const ol_id_error = resultData[1][0].pl_id_erro;
+      const ol_id_feedback = resultData[1][0].pl_feedback;
       if (ol_id_error === 0 && ol_id_record > 0) {
         return new ResultModel(
           100200,
           `${ol_id_feedback} id: ${ol_id_record}`,
           ol_id_record,
-          newUser,
+          resultData,
         );
       } else {
         return new ResultModel(100404, ol_id_feedback, 0, '');
