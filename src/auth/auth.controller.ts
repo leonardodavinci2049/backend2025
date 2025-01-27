@@ -17,6 +17,7 @@ import { UserIdDecorator } from 'src/core/decorators/userid.decorator';
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
+  
 
   @Post('v1/register')
   register(@Body() registerAuthDto: RegisterAuthDto) {

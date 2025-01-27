@@ -31,7 +31,7 @@ export class AuthService {
 
   async register(registerAuthDto: RegisterAuthDto) {
     const userRegister = await this.userService.create(registerAuthDto);
-    // return this.createToken(userRegister);
+    return userRegister;
   }
 
   async signIn(loginAuthDto: LoginAuthDto) {
@@ -87,7 +87,6 @@ export class AuthService {
       //[rows]
       const [resultData] = await connectionPool.execute(queryString);
 
-      // Validação do resultData
       if (!resultData) {
         return new ResultModel(
           100404,
@@ -101,15 +100,23 @@ export class AuthService {
       const ol_id_error = resultData[1]?.[0]?.pl_id_erro ?? 0;
       const ol_id_feedback = resultData[1]?.[0]?.pl_feedback ?? '';
       if (ol_id_error === 0 && ol_id_record > 0) {
+        const token = this.createToken(ol_id_record);
         return new ResultModel(
           100200,
           `${ol_id_feedback} id: ${ol_id_record}`,
           ol_id_record,
           resultData,
+          1,
+          token.accessToken,
         );
       } else {
         const ol_id_feedback = resultData[0]?.[0]?.pl_feedback ?? '';
-        return new ResultModel(100404, ol_id_feedback, 0, []);
+        return new ResultModel(
+          100401,
+          `${ol_id_feedback} id: ${ol_id_record}`,
+          ol_id_record,
+          resultData,
+        );
       }
     } catch (err) {
       return new ResultModel(100404, err.message, 0, []);
@@ -131,17 +138,17 @@ export class AuthService {
     throw new BadRequestException('Método não implementado');
   }
 
-  createToken(user: RegisterAuthDto) {
+  createToken(id: number) {
     return {
       accessToken: this.jwtService.sign(
         {
           //Payload
-          id: user.ID_USUARIO_SYSTEM,
+          id: id,
         },
         {
           //options
           expiresIn: '7 days',
-          subject: user.ID_USUARIO_SYSTEM.toString(),
+          subject: id.toString(),
           issuer: this.issuer,
           audience: this.audience,
         },

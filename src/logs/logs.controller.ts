@@ -1,7 +1,18 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  UseGuards,
+} from '@nestjs/common';
 import { LogsService } from './logs.service';
 import { CreateLogDto } from './dto/create-log.dto';
 import { UpdateLogDto } from './dto/update-log.dto';
+import { AuthGuard } from 'src/core/guards/auth.guard';
+import { SelectLogDto } from './dto/SelectLogsDto';
 
 @Controller('logs')
 export class LogsController {
@@ -12,11 +23,11 @@ export class LogsController {
     return this.logsService.create(createLogDto);
   }
 
-  @Get()
-  findAll() {
-    return this.logsService.findAll();
+  @UseGuards(AuthGuard)
+  @Post('v1/findMany')
+  findMany(@Body() selectLogDto: SelectLogDto) {
+    return this.logsService.findMany(selectLogDto);
   }
-
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.logsService.findOne(+id);
